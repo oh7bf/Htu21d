@@ -1,0 +1,149 @@
+#!/bin/sh
+#
+# Installation script for Rasbian Wheezy. The installation script can be
+# run after compiling the binaries.
+#
+# Installation:
+#
+# a) make
+# 
+# b) cd doc; ./mkhtu21d
+# 
+# c) sudo ./install (this script)
+#
+# d) sudo modprobe i2c-bcm2708; sudo modprobe i2c-dev
+#
+# e) sudo service htu21d start
+# 
+# f) tail -f /var/log/htu21d.log
+#
+# g) sudo update-rc.d htu21d defaults (optional)
+# 
+#
+# The directories used and files created by this script:
+#
+# /etc/init.d/htu21d                - init script
+# /etc/logrotate.d/htu21d           - log rotation file
+# /etc/htu21d_config                - configuration file
+# /usr/share/man                    - manual pages
+# /usr/sbin/htu21d                  - temperature reading daemon
+#
+# Sun Nov 30 18:44:58 CET 2014
+# Edit: 
+# 
+# Jaakko Koivuniemi
+#
+
+
+# source directory for 'Htu21d'
+SOURCEDIR=${PWD}
+SOURCEBIN=${SOURCEDIR}/
+SOURCEMAN=${SOURCEDIR}/doc
+
+# binary executables 
+BINDIR=/usr/sbin
+
+# manual pages
+MANDIR=/usr/share/man/man1
+
+# htu21d.log log rotation  
+LOGROTADIR=/etc/logrotate.d
+
+# automatic loading of modules
+MODPROBEDIR=/etc/modprobe.d
+
+# init script
+INITDIR=/etc/init.d
+
+# for pipicpowerd_conf configuration file
+CONFDIR=/etc
+
+# live data 
+VARLIBDIR=/var/lib
+
+# binary executables
+BINS='htu21d'
+
+if [ -d $SOURCEBIN ]; then
+  echo "Copy binary executables to ${BINDIR}"
+  for item in $BINS;
+  do
+    if [ -r ${SOURCEBIN}/${item} ]; then
+       echo "... ${item}"
+       /usr/bin/install -C -m 755 ${SOURCEBIN}/${item} ${BINDIR}
+    fi 
+  done
+else
+  echo "Source directory ${SOURCEBIN} does not exist"
+fi
+
+if [ -d $SOURCEMAN ]; then
+  echo "Copy manual pages to ${MANDIR}"
+  for item in $BINS;
+  do
+    if [ -r ${SOURCEMAN}/$item.1 ]; then
+       echo "... ${item}.1"
+       /usr/bin/install -C -m 664 ${SOURCEMAN}/${item}.1 ${MANDIR}
+    fi 
+  done
+else
+  echo "Source directory ${SOURCEMAN} does not exist"
+fi
+
+if [ ! -r ${LOGROTADIR}/htu21d ]; then
+  echo "Write log rotation file ${LOGROTADIR}/htu21d"
+  /usr/bin/install -C -m 644 ${SOURCEDIR}/htu21d.lrota ${LOGROTADIR}
+  /bin/mv ${LOGROTADIR}/htu21d.lrota ${LOGROTADIR}/htu21d
+else
+  echo "Log rotation file ${LOGROTADIR}/htu21d already exists"
+fi
+
+if [ ! -x ${INITDIR}/htu21d ]; then
+  echo "Write init script ${INITDIR}/htu21d"
+  /usr/bin/install -C -m 755 ${SOURCEDIR}/htu21d.sh ${INITDIR} 
+  /bin/mv ${INITDIR}/htu21d.sh ${INITDIR}/htu21d 
+else
+  echo "Init script ${INITDIR}/htu21d already exists"
+fi
+
+if [ ! -r ${CONFDIR}/htu21d_config ]; then
+  echo "Write default configuration file ${CONFDIR}/htu21d_config"
+  /usr/bin/install -C -m 664 ${SOURCEDIR}/htu21d_config ${CONFDIR} 
+else
+  echo "Configuration file ${CONFDIR}/htu21d_config already exists" 
+fi
+
+if [ -d /var/lib/htu21d ]; then
+  echo "Directory /var/lib/htu21d already exists"
+else
+  echo "Create directory /var/lib/htu21d"
+  /bin/mkdir -m 775 /var/lib/htu21d
+fi
+
+if /bin/grep -Fxq "i2c-bcm2708" /etc/modules
+then
+  echo "i2c-bcm2708 found from /etc/modules"
+else
+  echo "Add i2c-bcm2708 to /etc/modules"
+  echo "i2c-bcm2708" >> /etc/modules
+fi
+
+if /bin/grep -Fxq "i2c-dev" /etc/modules
+then
+  echo "i2c-dev found from /etc/modules"
+else
+  echo "Add i2c-dev to /etc/modules"
+  echo "i2c-dev" >> /etc/modules
+fi
+
+if /bin/grep -Fxq "#blacklist i2c-bcm2708" /etc/modprobe.d/raspi-blacklist.conf
+then
+  echo "black listing of i2c-bcm2708 already removed"
+else
+  echo "remove black listing of i2c-bcm2708"
+  /bin/cp /etc/modprobe.d/raspi-blacklist.conf /etc/modprobe.d/raspi-blacklist.conf.old
+  /bin/sed "s/blacklist i2c-bcm2708/#blacklist i2c-bcm2708/g" /etc/modprobe.d/raspi-blacklist.conf > /etc/modprobe.d/raspi-blacklist.conf.new
+  /bin/mv /etc/modprobe.d/raspi-blacklist.conf.new /etc/modprobe.d/raspi-blacklist.conf 
+fi
+
+echo "Run 'update-rc.d htu21d defaults' to automatically start at boot time"

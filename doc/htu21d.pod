@@ -1,0 +1,52 @@
+=head1 NAME
+
+htu21d -  monitor temperature and humidity from HTU21D using i2c
+
+=head1 SYNOPSIS
+
+B<htu21d> 
+
+=head1 DESCRIPTION
+
+The B<htu21d> is used to read temperature and humidity data from HTU21D 
+on Raspberry Pi using i2c bus. The daemon is started with command 
+
+B<service> I<htu21d> I<start>
+
+and can be stopped any time with
+
+B<service> I<htu21d> I<stop>
+
+The operation of the daemon can be checked from the log file.
+
+=head1 FILES
+
+I</etc/htu21d_config>             Configuration file. 
+
+I</etc/logrotate.d/htu21d>        Log rotation configuration file.
+
+I</etc/init.d/htu21d>             Init script.
+
+I</usr/sbin/htu21d>               Daemon code.
+
+I</var/lib/htu21d/humidity>       Live humidity value.
+
+I</var/lib/htu21d/temperature>    Live temperature value.
+
+I</var/log/htu21d.log>            Log file.
+
+I</var/run/htu21d.pid>            PID file.
+
+=head1 WARNING
+
+No check is done where the query data is written. Could make some hardware 
+unusable.
+
+=head1 AUTHORS
+
+Jaakko Koivuniemi 
+
+=head1 SEE ALSO
+
+i2cdetect(8), i2cset(8), i2cget(8)
+
