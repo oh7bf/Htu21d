@@ -1,2 +1,2 @@
 #!/bin/bash
-pod2man -c "Raspberry Pi" -r "version 20141130" htu21d.pod htu21d.1
+pod2man -c "Raspberry Pi" -r "version 20141201" htu21d.pod htu21d.1

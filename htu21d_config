@@ -11,9 +11,6 @@ LOGLEVEL 3
 # soft reset at start
 # SOFTRESET 0
 
-# humidity reading interval [s]
-HUMINT 300
-
-# temperature reading interval [s]
-TEMPINT 300
+# measurement interval [s]
+MEASINT 300
 

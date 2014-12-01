@@ -20,7 +20,7 @@
  ****************************************************************************
  *
  * Sun Nov 30 18:48:05 CET 2014
- * Edit: 
+ * Edit: Mon Dec  1 19:25:24 CET 2014
  *
  * Jaakko Koivuniemi
  **/
@@ -38,9 +38,8 @@
 #include <time.h>
 #include <signal.h>
 
-const int version=20141130; // program version
-int humint=300; // humidity reading interval [s]
-int tempint=300; // temperature reading interval [s]
+const int version=20141201; // program version
+int measint=300; // measurement interval [s]
 int softreset=0; // 1=soft reset at start
 
 double temperature=0; // temperature [C]
@@ -120,16 +119,10 @@ void read_config()
                logmessage(logfile,message,loglev,4);
              }
           }
-          if(strncmp(par,"HUMINT",7)==0)
+          if(strncmp(par,"MEASINT",7)==0)
           {
-             humint=(int)value;
-             sprintf(message,"Humidity reading interval set to %d s",(int)value);
-             logmessage(logfile,message,loglev,4);
-          }
-          if(strncmp(par,"TEMPINT",7)==0)
-          {
-             tempint=(int)value;
-             sprintf(message,"Temperature reading interval set to %d s",(int)value);
+             measint=(int)value;
+             sprintf(message,"Measurement interval set to %d s",(int)value);
              logmessage(logfile,message,loglev,4);
           }
        }
@@ -346,7 +339,7 @@ double read_temperature()
       T&=0xFFFC;
       temp=-46.85+175.72*((double)T)/65536.0;
       sprintf(message,"Temperature %-+6.3f C",temp);
-      logmessage(logfile,message,loglev,4);
+      logmessage(logfile,message,loglev,2);
       cont=1;
       write_temp(temp); 
     }
@@ -439,7 +432,8 @@ double read_humidity()
       H&=0xFFFC;
       rhum=-6+125*((double)H)/65536.0;
       sprintf(message,"Humidity %-5.1f %%",rhum);
-      logmessage(logfile,message,loglev,4);
+      logmessage(logfile,message,loglev,2);
+
       cont=1;
       write_humidity(rhum); 
     }
@@ -492,8 +486,7 @@ int main()
   read_config();
 
   int unxs=(int)time(NULL); // unix seconds
-  int nxthum=unxs; // next time to read humidity
-  int nxtemp=unxs; // next time to read temperature
+  int nxtmeas=unxs; // next time to read temperature and humidity
 
   pid_t pid, sid;
         
@@ -574,15 +567,19 @@ int main()
   {
     unxs=(int)time(NULL); 
 
-    if((unxs>=nxtemp)||((nxtemp-unxs)>tempint)) 
+    if((unxs>=nxtmeas)||((nxtmeas-unxs)>measint)) 
     {
-      nxtemp=tempint+unxs;
+      nxtmeas=measint+unxs;
       temperature=read_temperature();
-    }
-    if((unxs>=nxthum)||((nxthum-unxs)>humint)) 
-    {
-      nxthum=humint+unxs;
-      humidity=read_humidity();
+      if(cont==1)
+      {
+        humidity=read_humidity();
+        if(cont==1)
+        {
+          sprintf(message,"T=%-+6.3f C RH=%-5.1f %%",temperature,humidity);
+          logmessage(logfile,message,loglev,4);
+        }
+      }
     }
 
     sleep(1);
