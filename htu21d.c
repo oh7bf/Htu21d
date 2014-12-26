@@ -20,7 +20,7 @@
  ****************************************************************************
  *
  * Sun Nov 30 18:48:05 CET 2014
- * Edit: Mon Dec  1 19:25:24 CET 2014
+ * Edit: Fri Dec 26 09:05:02 CET 2014
  *
  * Jaakko Koivuniemi
  **/
@@ -38,7 +38,7 @@
 #include <time.h>
 #include <signal.h>
 
-const int version=20141201; // program version
+const int version=20141226; // program version
 int measint=300; // measurement interval [s]
 int softreset=0; // 1=soft reset at start
 
@@ -578,6 +578,8 @@ int main()
         {
           sprintf(message,"T=%-+6.3f C RH=%-5.1f %%",temperature,humidity);
           logmessage(logfile,message,loglev,4);
+// optional script to insert the data to local database
+//          ok=system("/usr/sbin/insert-htu21d.sh");
         }
       }
     }
