@@ -5,7 +5,7 @@
 #
 # Installation:
 #
-# a) make
+# a) cd src; make
 # 
 # b) cd doc; ./mkhtu21d
 # 
@@ -26,12 +26,11 @@
 # /etc/logrotate.d/htu21d           - log rotation file
 # /etc/htu21d_config                - configuration file
 # /usr/share/man/man1/htu21d.1      - manual page
-# /usr/sbin/insert-htu21d.sh        - database insert script
 # /usr/sbin/htu21d                  - temperature reading daemon
 # /var/lib/htu21d/                  - live temperature and humidity data
 #
 # Sun Nov 30 18:44:58 CET 2014
-# Edit: Tue Feb 10 18:46:59 CET 2015
+# Edit: Sun May 17 15:21:08 CEST 2015
 # 
 # Jaakko Koivuniemi
 #
@@ -39,7 +38,7 @@
 
 # source directory for 'Htu21d'
 SOURCEDIR=${PWD}
-SOURCEBIN=${SOURCEDIR}/
+SOURCEBIN=${SOURCEDIR}/src
 SOURCEMAN=${SOURCEDIR}/doc
 
 # binary executables 
@@ -47,9 +46,6 @@ BINDIR=/usr/sbin
 
 # manual pages
 MANDIR=/usr/share/man/man1
-
-# htu21d.log log rotation  
-LOGROTADIR=/etc/logrotate.d
 
 # init script
 INITDIR=/etc/init.d
@@ -87,14 +83,6 @@ if [ -d $SOURCEMAN ]; then
   done
 else
   echo "Source directory ${SOURCEMAN} does not exist"
-fi
-
-if [ ! -r ${LOGROTADIR}/htu21d ]; then
-  echo "Write log rotation file ${LOGROTADIR}/htu21d"
-  /usr/bin/install -C -m 644 ${SOURCEDIR}/htu21d.lrota ${LOGROTADIR}
-  /bin/mv ${LOGROTADIR}/htu21d.lrota ${LOGROTADIR}/htu21d
-else
-  echo "Log rotation file ${LOGROTADIR}/htu21d already exists"
 fi
 
 if [ ! -x ${INITDIR}/htu21d ]; then

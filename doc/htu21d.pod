@@ -23,8 +23,6 @@ The operation of the daemon can be checked from the log file.
 
 I</etc/htu21d_config>             Configuration file. 
 
-I</etc/logrotate.d/htu21d>        Log rotation configuration file.
-
 I</etc/init.d/htu21d>             Init script.
 
 I</usr/sbin/htu21d>               Daemon code.
