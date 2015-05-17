@@ -5,32 +5,35 @@
 #
 # Installation:
 #
-# a) cd src; make
-# 
-# b) cd doc; ./mkhtu21d
-# 
-# c) sudo ./install (this script)
+# a) sudo apt-get install sqlite3; sudo apt-get install libsqlite3-dev
 #
-# d) sudo raspi-config (to enable I2C) 
-#
-# e) sudo service htu21d start
+# b) cd src; make
 # 
-# f) tail -f /var/log/htu21d.log
+# c) cd doc; ./mkhtu21d
+# 
+# d) sudo ./install (this script)
 #
-# g) sudo update-rc.d htu21d defaults (optional)
+# e) create SQLite database table, see table/tables.txt
+#
+# f) sudo raspi-config (to enable I2C) 
+#
+# g) sudo service htu21d start
+# 
+# h) tail -f /var/log/htu21d.log
+#
+# i) sudo update-rc.d htu21d defaults (optional)
 # 
 #
 # The directories used and files created by this script:
 #
 # /etc/init.d/htu21d                - init script
-# /etc/logrotate.d/htu21d           - log rotation file
 # /etc/htu21d_config                - configuration file
 # /usr/share/man/man1/htu21d.1      - manual page
 # /usr/sbin/htu21d                  - temperature reading daemon
 # /var/lib/htu21d/                  - live temperature and humidity data
 #
 # Sun Nov 30 18:44:58 CET 2014
-# Edit: Sun May 17 15:21:08 CEST 2015
+# Edit: Sun May 17 22:19:28 CEST 2015
 # 
 # Jaakko Koivuniemi
 #
@@ -105,6 +108,22 @@ if [ -d /var/lib/htu21d ]; then
 else
   echo "Create directory /var/lib/htu21d"
   /bin/mkdir -m 775 /var/lib/htu21d
+fi
+
+if /bin/grep -Fxq "i2c-bcm2708" /etc/modules
+then
+  echo "i2c-bcm2708 found from /etc/modules"
+else
+  echo "Add i2c-bcm2708 to /etc/modules"
+  echo "i2c-bcm2708" >> /etc/modules
+fi
+
+if /bin/grep -Fxq "i2c-dev" /etc/modules
+then
+  echo "i2c-dev found from /etc/modules"
+else
+  echo "Add i2c-dev to /etc/modules"
+  echo "i2c-dev" >> /etc/modules
 fi
 
 echo "Run 'update-rc.d htu21d defaults' to automatically start at boot time"
