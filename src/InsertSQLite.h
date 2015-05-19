@@ -1,5 +1,5 @@
 #ifndef INSERTSQLITE_H_INCLUDED
 #define INSERTSQLITE_H_INCLUDED
-void insertSQLite(double t, double h);
+void InsertSQLite(const char query[200], int n, double data[10]);
 #endif
 

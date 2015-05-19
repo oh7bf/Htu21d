@@ -11,7 +11,7 @@
 #include <sqlite3.h>
 #include "htu21d.h"
 
-int readSQLiteTime()
+int ReadSQLiteTime()
 {
   sqlite3 *db;
   sqlite3_stmt *stmt; 

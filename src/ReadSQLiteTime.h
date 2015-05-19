@@ -1,5 +1,5 @@
 #ifndef READSQLITETIME_H_INCLUDED
 #define READSQLITETIME_H_INCLUDED
-int readSQLiteTime();
+int ReadSQLiteTime();
 #endif
 

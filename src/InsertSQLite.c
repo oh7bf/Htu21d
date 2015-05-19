@@ -11,11 +11,10 @@
 #include <sqlite3.h>
 #include "htu21d.h"
 
-void insertSQLite(double t, double h)
+void InsertSQLite(const char query[200], int n, double data[10])
 {
   sqlite3 *db;
   sqlite3_stmt *stmt; 
-  const char query[200]="insert into htu21d (temperature,humidity) values (?,?)";  
   char message[200]="";
 
   int rc;
@@ -28,21 +27,18 @@ void insertSQLite(double t, double h)
     return;
   }
 
+  int i;
   rc = sqlite3_prepare_v2(db, query, 200, &stmt, 0);
   if( rc==SQLITE_OK )
   {
-    rc = sqlite3_bind_double(stmt, 1, t);
-    if( rc!=SQLITE_OK)
+    for(i=1;i<=n;i++)
     {
-      sprintf(message, "Binding failed: %s", sqlite3_errmsg(db));
-      syslog(LOG_ERR|LOG_DAEMON, "%s", message);
-    }
-
-    rc = sqlite3_bind_double(stmt, 2, h);
-    if( rc!=SQLITE_OK)
-    {
-      sprintf(message, "Binding failed: %s", sqlite3_errmsg(db));
-      syslog(LOG_ERR|LOG_DAEMON, "%s", message);
+       rc = sqlite3_bind_double(stmt, i, data[i-1]);
+       if( rc!=SQLITE_OK)
+       {
+         sprintf(message, "Binding failed: %s", sqlite3_errmsg(db));
+         syslog(LOG_ERR|LOG_DAEMON, "%s", message);
+       }
     }
 
     rc = sqlite3_step(stmt); 

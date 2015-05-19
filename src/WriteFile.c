@@ -10,7 +10,7 @@
 #include <syslog.h>
 #include "htu21d.h"
 
-void writefile(const char fname[200], double value)
+void WriteFile(const char fname[200], double value)
 {
   char message[200]=""; 
   FILE *tfile;

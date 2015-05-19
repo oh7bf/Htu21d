@@ -21,7 +21,7 @@
  ****************************************************************************
  *
  * Sun Nov 30 18:48:05 CET 2014
- * Edit: Sun May 17 12:35:09 CEST 2015
+ * Edit: Tue May 19 21:08:08 CEST 2015
  *
  * Jaakko Koivuniemi
  **/
@@ -40,13 +40,14 @@
 #include <signal.h>
 #include <syslog.h>
 #include "htu21d.h"
-#include "insertSQLite.h"
-#include "readSQLiteTime.h"
-#include "readregister.h"
-#include "resetchip.h"
-#include "writefile.h"
+#include "InsertSQLite.h"
+#include "ReadSQLiteTime.h"
+#include "ReadRegister.h"
+#include "WriteCommand.h"
+#include "WriteFile.h"
+#include "Htu21dTemperature.h"
 
-const int version=20150517; // program version
+const int version=20150519; // program version
 int measint=300; // measurement interval [s]
 int softreset=0; // 1=soft reset at start
 
@@ -54,6 +55,7 @@ double temperature=0; // temperature [C]
 double humidity=0; // humidity [%]
 const char hdatafile[200]="/var/lib/htu21d/humidity";
 const char tdatafile[200]="/var/lib/htu21d/temperature";
+const char query[200]="insert into htu21d (temperature,humidity) values (?,?)";
 
 // local SQLite database file
 int dbsqlite=0; // store data to local SQLite database
@@ -134,78 +136,6 @@ void read_config()
 
 int cont=1; /* main loop flag */
 
-// read temperature from chip
-double read_temperature()
-{
-  int fd,rd;
-  int cnt=0;
-  unsigned char buf[10];
-  unsigned short T=0;
-  double temp=0;
-
-  if((fd=open(i2cdev, O_RDWR)) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to open i2c port");
-    return -100;
-  }
-  rd=flock(fd, LOCK_EX|LOCK_NB);
-  cnt=i2lockmax;
-  while((rd==1)&&(cnt>0)) // try again if port locking failed
-  {
-    sleep(1);
-    rd=flock(fd, LOCK_EX|LOCK_NB);
-    cnt--;
-  }
-  if(rd)
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to lock i2c port");
-    close(fd);
-    return -200;
-  }
-
-  cont=0;
-  buf[0]=0xf3;
-  if(ioctl(fd, I2C_SLAVE, address) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Unable to get bus access to talk to slave");
-    close(fd);
-    return -300;
-  }
-
-  if((write(fd, buf, 1)) != 1) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Error writing to i2c slave");
-    close(fd);
-    return -400;
-  }
-  else
-  {
-    usleep(50000);
-    if(read(fd, buf, 3) != 3) 
-    {
-      syslog(LOG_ERR|LOG_DAEMON, "Unable to read from slave");
-      close(fd);
-      return -500;
-    }
-    else 
-    {
-      sprintf(message,"read 0x%02x%02x%02x\n",buf[0],buf[1],buf[2]);
-      syslog(LOG_DEBUG, "%s", message);
-      T=((unsigned short)buf[0])<<8;
-      T|=(unsigned short)buf[1];
-      T&=0xFFFC;
-      temp=-46.85+175.72*((double)T)/65536.0;
-      sprintf(message,"Temperature %-+6.3f C",temp);
-      syslog(LOG_DEBUG, "%s", message);
-      cont=1;
-      writefile(tdatafile, temp);
-//      write_temp(temp); 
-    }
-  }
-  close(fd);
-
-  return temp;
-}
 
 // read humidity from chip
 double read_humidity()
@@ -271,7 +201,7 @@ double read_humidity()
       syslog(LOG_DEBUG, "%s", message);
 
       cont=1;
-      writefile(hdatafile, rhum);
+      WriteFile(hdatafile, rhum);
     }
   }
   close(fd);
@@ -377,7 +307,7 @@ int main()
   fprintf(pidf,"%d\n",getpid());
   fclose(pidf);
 
-  if(read_register()<0)
+  if( ReadRegister(address, 0xE7)<0 )
   {
     sprintf(message,"Failed to read user register, exit");
     syslog(LOG_ERR|LOG_DAEMON, "%s", message);
@@ -387,7 +317,7 @@ int main()
   {
     if(softreset==1) 
     {
-      if(resetchip()!=1)
+      if( WriteCommand(address, 0xFE, 20000) != 1)
       {
         sprintf(message,"Chip reset failed");
         syslog(LOG_ERR|LOG_DAEMON, "%s", message);
@@ -398,21 +328,22 @@ int main()
 
   if(dbsqlite==1)
   {
-    if(readSQLiteTime()==0) 
+    if(ReadSQLiteTime()==0) 
     {
       syslog(LOG_ERR|LOG_DAEMON, "SQLite database read failed, drop database connection");
       dbsqlite=0; 
     }
   }
 
+  double data[10];
   while(cont==1)
   {
     unxs=(int)time(NULL); 
 
     if((unxs>=nxtmeas)||((nxtmeas-unxs)>measint)) 
     {
-      nxtmeas=measint+unxs;
-      temperature=read_temperature();
+      nxtmeas = measint+unxs;
+      temperature = Htu21dTemperature(tdatafile);
       if(cont==1)
       {
         humidity=read_humidity();
@@ -420,7 +351,12 @@ int main()
         {
           sprintf(message,"T=%-+6.3f C RH=%-5.1f %%",temperature,humidity);
           syslog(LOG_INFO|LOG_DAEMON, message);
-          if(dbsqlite==1) insertSQLite(temperature,humidity);
+          if(dbsqlite==1)
+          {
+             data[0]=temperature;
+             data[1]=humidity; 
+             InsertSQLite(query, 2, data);
+          }
         }
       }
     }
