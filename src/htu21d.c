@@ -21,24 +21,11 @@
  ****************************************************************************
  *
  * Sun Nov 30 18:48:05 CET 2014
- * Edit: Tue May 19 21:08:08 CEST 2015
+ * Edit: Wed May 20 20:30:04 CEST 2015
  *
  * Jaakko Koivuniemi
  **/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <unistd.h>
-#include <time.h>
-#include <signal.h>
-#include <syslog.h>
 #include "htu21d.h"
 #include "InsertSQLite.h"
 #include "ReadSQLiteTime.h"
@@ -46,8 +33,9 @@
 #include "WriteCommand.h"
 #include "WriteFile.h"
 #include "Htu21dTemperature.h"
+#include "Htu21dHumidity.h"
 
-const int version=20150519; // program version
+const int version=20150520; // program version
 int measint=300; // measurement interval [s]
 int softreset=0; // 1=soft reset at start
 
@@ -62,7 +50,6 @@ int dbsqlite=0; // store data to local SQLite database
 char *dbfile=NULL;
 
 const char *i2cdev="/dev/i2c-1";
-const int  address=0x40;
 const int  i2lockmax=10; // maximum number of times to try lock i2c port  
 
 const char confile[200]="/etc/htu21d_config";
@@ -135,80 +122,6 @@ void read_config()
 }
 
 int cont=1; /* main loop flag */
-
-
-// read humidity from chip
-double read_humidity()
-{
-  int fd,rd;
-  int cnt=0;
-  unsigned char buf[10];
-  unsigned short H=0;
-  double rhum=0;
-
-  if((fd=open(i2cdev, O_RDWR)) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to open i2c port");
-    return -100;
-  }
-  rd=flock(fd, LOCK_EX|LOCK_NB);
-  cnt=i2lockmax;
-  while((rd==1)&&(cnt>0)) // try again if port locking failed
-  {
-    sleep(1);
-    rd=flock(fd, LOCK_EX|LOCK_NB);
-    cnt--;
-  }
-  if(rd)
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to lock i2c port");
-    close(fd);
-    return -200;
-  }
-
-  cont=0;
-  buf[0]=0xf5;
-  if(ioctl(fd, I2C_SLAVE, address) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Unable to get bus access to talk to slave");
-    close(fd);
-    return -300;
-  }
-  if((write(fd, buf, 1)) != 1) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Error writing to i2c slave");
-    close(fd);
-    return -400;
-  }
-  else
-  {
-    usleep(16000);
-    if(read(fd, buf, 3) != 3) 
-    {
-      syslog(LOG_ERR|LOG_DAEMON, "Unable to read from slave");
-      close(fd);
-      return -500;
-    }
-    else 
-    {
-      sprintf(message,"read 0x%02x%02x%02x\n",buf[0],buf[1],buf[2]);
-      syslog(LOG_DEBUG, "%s", message);
-      H=((unsigned short)buf[0])<<8;
-      H|=(unsigned short)buf[1];
-      H&=0xFFFC;
-      rhum=-6+125*((double)H)/65536.0;
-      sprintf(message,"Humidity %-5.1f %%",rhum);
-      syslog(LOG_DEBUG, "%s", message);
-
-      cont=1;
-      WriteFile(hdatafile, rhum);
-    }
-  }
-  close(fd);
-
-  return rhum;
-}
-
 
 void stop(int sig)
 {
@@ -307,7 +220,7 @@ int main()
   fprintf(pidf,"%d\n",getpid());
   fclose(pidf);
 
-  if( ReadRegister(address, 0xE7)<0 )
+  if( ReadRegister(HTU21D_ADDRESS, HTU21D_READ_USER_REG)<0 )
   {
     sprintf(message,"Failed to read user register, exit");
     syslog(LOG_ERR|LOG_DAEMON, "%s", message);
@@ -317,7 +230,7 @@ int main()
   {
     if(softreset==1) 
     {
-      if( WriteCommand(address, 0xFE, 20000) != 1)
+      if( WriteCommand(HTU21D_ADDRESS, HTU21D_SOFT_RESET, 20000) != 1)
       {
         sprintf(message,"Chip reset failed");
         syslog(LOG_ERR|LOG_DAEMON, "%s", message);
@@ -346,7 +259,7 @@ int main()
       temperature = Htu21dTemperature(tdatafile);
       if(cont==1)
       {
-        humidity=read_humidity();
+        humidity = Htu21dHumidity(hdatafile);
         if(cont==1)
         {
           sprintf(message,"T=%-+6.3f C RH=%-5.1f %%",temperature,humidity);

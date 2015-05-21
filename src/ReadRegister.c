@@ -1,16 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <unistd.h>
-#include <syslog.h>
 #include "htu21d.h"
 
+// write command byte to i2c address and read byte, which is returned as 
+// !USE unsigned short here!
 int ReadRegister(int address, unsigned char cmd)
 {
   int value=0;
@@ -41,7 +32,7 @@ int ReadRegister(int address, unsigned char cmd)
     return -2;
   }
   cont=0;
-  buf[0]=cmd; // 0xE7 read user register
+  buf[0]=cmd; 
   if(ioctl(fd, I2C_SLAVE, address) < 0) 
   {
     syslog(LOG_ERR|LOG_DAEMON,"Unable to get bus access to talk to slave");
@@ -65,7 +56,7 @@ int ReadRegister(int address, unsigned char cmd)
     else 
     {
       value=(int)buf[0];
-      sprintf(message,"User register 0x%02x",buf[0]);
+      sprintf(message,"Register 0x%02x",buf[0]);
       syslog(LOG_DEBUG, "%s", message);
       cont=1; 
     }

@@ -1,16 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <unistd.h>
-#include <syslog.h>
 #include "htu21d.h"
 
+// write command byte to i2c address and wait delay in microseconds 
 int WriteCommand(int address, unsigned char cmd, int delay)
 {
   int fd,rd;
@@ -40,7 +30,7 @@ int WriteCommand(int address, unsigned char cmd, int delay)
   }
 
   cont=0;
-  buf[0]=cmd; // 0xFE soft reset command 
+  buf[0]=cmd; 
   if(ioctl(fd, I2C_SLAVE, address) < 0) 
   {
     syslog(LOG_ERR|LOG_DAEMON, "Unable to get bus access to talk to slave");
