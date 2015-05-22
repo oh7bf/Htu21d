@@ -1,6 +1,8 @@
 #include "htu21d.h"
 
 // write command byte to i2c address and wait delay in microseconds 
+// one is returned is success and negtive number in case of failure
+// in case of more serious failure the global integer 'cont' is set to zero 
 int WriteCommand(int address, unsigned char cmd, int delay)
 {
   int fd,rd;
@@ -14,7 +16,7 @@ int WriteCommand(int address, unsigned char cmd, int delay)
   }
 
   rd=flock(fd, LOCK_EX|LOCK_NB);
-  cnt=i2lockmax;
+  cnt=I2LOCK_MAX;
   while((rd==1)&&(cnt>0)) // try again if port locking failed
   {
     sleep(1);

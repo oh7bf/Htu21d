@@ -21,7 +21,7 @@
  ****************************************************************************
  *
  * Sun Nov 30 18:48:05 CET 2014
- * Edit: Wed May 20 20:30:04 CEST 2015
+ * Edit: Fri May 22 21:05:40 CEST 2015
  *
  * Jaakko Koivuniemi
  **/
@@ -31,11 +31,12 @@
 #include "ReadSQLiteTime.h"
 #include "ReadRegister.h"
 #include "WriteCommand.h"
+#include "WriteCommandRead3.h"
 #include "WriteFile.h"
 #include "Htu21dTemperature.h"
 #include "Htu21dHumidity.h"
 
-const int version=20150520; // program version
+const int version=20150522; // program version
 int measint=300; // measurement interval [s]
 int softreset=0; // 1=soft reset at start
 
@@ -220,7 +221,7 @@ int main()
   fprintf(pidf,"%d\n",getpid());
   fclose(pidf);
 
-  if( ReadRegister(HTU21D_ADDRESS, HTU21D_READ_USER_REG)<0 )
+  if( ReadRegister(HTU21D_ADDRESS, HTU21D_READ_USER_REG) == USHRT_MAX )
   {
     sprintf(message,"Failed to read user register, exit");
     syslog(LOG_ERR|LOG_DAEMON, "%s", message);

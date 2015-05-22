@@ -16,7 +16,7 @@ LDFLAGS       = -lsqlite3 -lm -O
 
 all: htu21d 
 
-htu21d: InsertSQLite.o ReadSQLiteTime.o ReadRegister.o WriteCommand.o WriteFile.o Htu21dTemperature.o Htu21dHumidity.o htu21d.o
+htu21d: InsertSQLite.o ReadSQLiteTime.o ReadRegister.o WriteCommand.o WriteCommandRead3.o WriteFile.o Htu21dTemperature.o Htu21dHumidity.o htu21d.o
 	$(LD) $(LDFLAGS) $^ -o $@
 
 clean:

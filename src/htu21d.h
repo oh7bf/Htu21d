@@ -17,6 +17,7 @@
 #ifndef HTU21D_H_INCLUDED
 #define HTU21D_H_INCLUDED
 
+#define I2LOCK_MAX 10
 #define HTU21D_ADDRESS 0x40
 #define HTU21D_WRITE_USER_REG 0xE6
 #define HTU21D_READ_USER_REG 0xE7
@@ -25,7 +26,7 @@
 #define HTU21D_SOFT_RESET 0xFE 
 
 extern const char *i2cdev;// i2c device
-extern const int i2lockmax; // maximum number of times to try lock i2c port  
+//extern const int i2lockmax; // maximum number of times to try lock i2c port  
 extern int loglev; // log level
 extern int cont; // main loop flag
 extern char *dbfile; // SQLite database file name

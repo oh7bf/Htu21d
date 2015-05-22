@@ -1,76 +1,29 @@
 #include "htu21d.h"
+#include "WriteCommandRead3.h"
 #include "WriteFile.h"
 
 double Htu21dTemperature(const char tdatafile[200])
 {
-  int fd,rd;
-  int cnt=0;
-  unsigned char buf[10];
   unsigned short T=0;
-  double temp=0;
+  unsigned int D=0;
+  double temp=-100;
   char message[200]="";
 
-  if((fd=open(i2cdev, O_RDWR)) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to open i2c port");
-    return -100;
-  }
 
-  rd=flock(fd, LOCK_EX|LOCK_NB);
-  cnt=i2lockmax;
-  while((rd==1)&&(cnt>0)) // try again if port locking failed
+  D = WriteCommandRead3(HTU21D_ADDRESS, HTU21D_TRIG_TEMP_MEAS, 50000);
+  if( D == UINT_MAX )
   {
-    sleep(1);
-    rd=flock(fd, LOCK_EX|LOCK_NB);
-    cnt--;
-  }
-
-  if(rd)
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Failed to lock i2c port");
-    close(fd);
-    return -200;
-  }
-
-  cont=0;
-  buf[0]=HTU21D_TRIG_TEMP_MEAS;
-  if(ioctl(fd, I2C_SLAVE, HTU21D_ADDRESS) < 0) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Unable to get bus access to talk to slave");
-    close(fd);
-    return -300;
-  }
-
-  if((write(fd, buf, 1)) != 1) 
-  {
-    syslog(LOG_ERR|LOG_DAEMON, "Error writing to i2c slave");
-    close(fd);
-    return -400;
+    syslog(LOG_INFO|LOG_DAEMON, "Reading temperature failed");
   }
   else
   {
-    usleep(50000);
-    if(read(fd, buf, 3) != 3) 
-    {
-      syslog(LOG_ERR|LOG_DAEMON, "Unable to read from slave");
-      close(fd);
-      return -500;
-    }
-    else 
-    {
-      sprintf(message,"read 0x%02x%02x%02x\n",buf[0],buf[1],buf[2]);
-      syslog(LOG_DEBUG, "%s", message);
-      T=((unsigned short)buf[0])<<8;
-      T|=(unsigned short)buf[1];
-      T&=0xFFFC;
-      temp=-46.85+175.72*((double)T)/65536.0;
-      sprintf(message,"Temperature %-+6.3f C",temp);
-      syslog(LOG_DEBUG, "%s", message);
-      cont=1;
-      WriteFile(tdatafile, temp);
-    }
+    T = (unsigned short)(D>>8);
+    T &= 0xFFFC;
+    temp = -46.85+175.72*((double)T)/65536.0;
+    sprintf(message,"Temperature %-+6.3f C",temp);
+    syslog(LOG_DEBUG, "%s", message);
+    WriteFile(tdatafile, temp);
   }
-  close(fd);
 
   return temp;
 }
